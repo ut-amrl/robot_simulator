@@ -12,40 +12,35 @@
 % OUTPUT: whether generated code matches NL command
 % METHOD: run a simulation of the code, check if it meets the NL command specifications
 
-room("Arjuns_office").
-room("start_loc").
-agent("robot").
-agent("Arjun").
-is_in("Arjun", "Arjuns_office", 0).
-is_in("robot", "start_loc", 0).
+#program init_states.
 
-r("no"). r("yes"). r("maybe").
+% stuff added here from NL command
+
+#program rules.
+
 1{ response(Answer) : r(Answer)}1.
 #const tmax = 5.
 
+
 % Transition rules
 
-% goto changes loc at next timestep
-is_in("robot", B, I+1) :- go_to(B, I), is_in("robot", C, I), C!=B, I+1 < tmax.
+% goto changes loc of robot at next timestep
+is_in_room("robot", B, I+1) :- go_to(B, I), is_in_room("robot", C, I), C!=B, I+1 < tmax.
 
-% stays in same loc unless goto issued
-is_in(A, R, T+1) :- is_in(A, R, T), T+1<tmax, 
-                    not go_to(X, T), room(X). % no two places
+% robot stays in same loc unless goto issued
+is_in_room("robot", R, T+1) :- is_in_room("robot", R, T), T+1<tmax, 
+                    not go_to(_, T). 
 
-% if agents in same room, ask question
-asked(Agent, Question, Time) :- is_in(Agent, Room, Time), 
-                            is_in("robot", Room, Time),
+% other agents stay in same loc (no control over other agents for now)
+is_in_room(A, R, T+1) :- is_in_room(A, R, T), T+1<tmax, A!="robot".
+
+% if agents are in the same room, ask question
+asked(Agent, Question, Time) :- is_in_room(Agent, Room, Time), 
+                            is_in_room("robot", Room, Time),
                             ask(Agent, Question, Time), Agent != "robot".
 
 % if agent asked question, get response
 replied(Agent, Answer, Time+1) :- asked(Agent, Question, Time),
                                 response(Answer).
 
-% LLM Generated code (translated):
-go_to("Arjuns_office", 0).
-ask("Arjun", "ready to head out?", 1).
-% go_to("start_loc", 3).
-
-% Test cases require NL goals : get Arjun's reply, come back to start loc
-:- not replied("Arjun", _, _).
-:- not is_in("robot", "start_loc", tmax-1).
+#program nl_commands.
