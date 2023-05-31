@@ -19,7 +19,6 @@
 #program rules.
 
 1{ response(Answer) : r(Answer)}1.
-#const tmax = 5.
 
 
 % Transition rules
@@ -42,5 +41,6 @@ asked(Agent, Question, Time) :- is_in_room(Agent, Room, Time),
 % if agent asked question, get response
 replied(Agent, Answer, Time+1) :- asked(Agent, Question, Time),
                                 response(Answer).
+
 
 #program nl_commands.

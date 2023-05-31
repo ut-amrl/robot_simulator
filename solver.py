@@ -14,31 +14,20 @@ class Context:
     def solve(self):
         return self.ctl.solve()
 
-    def ground_to_latest_tp(self) -> None:
-        # ground to latest time point
-        self.ctl.ground([self.parts[0], self.parts[2]])
+ 
+    def solve_to_tp(self, tp: int) -> None:
+        # ground to tp
+        self.ctl.ground(self.parts + [("base",f"#const tmax = {tp}.")])
         self.ctl.solve()
-        self.ctl.ground([self.parts[1]])
-        self.ctl.solve()
         
-    def get_curr_timestep(self) -> int:
-        # gets max time (from latest NL cmd)
-        self.ctl.ground([self.parts[0], self.parts[2]])
-        all_cmds_tps = []
-        for (sig, arity, _) in self.ctl.symbolic_atoms.signatures:
-            all_cmds_tps += [int(str(func.symbol.arguments[2])) for func
-                             in self.ctl.symbolic_atoms.by_signature(sig, arity)]
         
-        print(all_cmds_tps, self.ctl.symbolic_atoms.signatures)
-        
-        return max(all_cmds_tps)
-    
     def get_current_location(self) -> str:
         # get robot location at max time (from is_in_room)
-        time_step = self.get_curr_timestep()
+        time_step = self.curr_tp
         return self.get_room_at(time_step)
 
     def get_room_at(self, time : int, agent : str = "robot") -> str:
+        self.solve_to_tp(time)
         room = [sig.symbol for sig 
                             in self.ctl.symbolic_atoms.by_signature("is_in_room", 3)
                             if sig.symbol.arguments[2] == Number(time) and
@@ -48,7 +37,7 @@ class Context:
     
     def get_all_rooms(self) -> List[str]:
         # get all "is in room" and "goto" values 
-        self.ctl.ground([self.parts[0], self.parts[2]])
+        self.solve_to_tp(self.curr_tp)
         is_in_room_stmts = [str(sig.symbol.arguments[1]) for sig 
                             in self.ctl.symbolic_atoms.by_signature("is_in_room", 3)]
         goto_stmts = [str(sig.symbol.arguments[1]) for sig 
@@ -57,29 +46,41 @@ class Context:
         return is_in_room_stmts + goto_stmts
     
     
-    
     def is_in_room(self, obj : str) -> bool:
         # check if is in the room at curr time step
-        time = self.get_curr_timestep()
-        room = self.get_room_at(time)
-        self.ctl.ground([self.parts[0]])
-        
+        room = self.get_room_at(self.curr_tp)
+
         return any((str(i.symbol.arguments[0]) == f'"{obj}"' and   
                         str(i.symbol.arguments[1]) == f'"{room}"' and
-                        int(str(i.symbol.arguments[2])) == time) for i in 
+                        int(str(i.symbol.arguments[2])) == self.curr_tp) for i in 
                 self.ctl.symbolic_atoms.by_signature("is_in_room", 3))
 
+        
+    ## actions: ground after each action
+    
+    ## get most curr response
+    def say(self, message : str) -> None:
+        # get most current reply
+        reply = [reply[1] for reply in self.ctl.symbolic_atoms.by_signature("replied", 3)
+                 if reply.symbol.arguments[2] == self.curr_tp]
+        assert(len(reply) == 1), reply
+        print(message + reply)
+        
     def go_to(self, location : str) -> None:
         # issue goto
-        self.ctl.add("nl_commands", [], f'go_to("robot", "{location}", {self.get_curr_timestep() + 1}).')
+        self.ctl.add("nl_commands", [], f'go_to("robot", "{location}", {self.curr_tp + 1}).')
+        self.curr_tp += 1
+        self.solve_to_tp(self.curr_tp)
 
     def ask(self, person : str, question : str, options: List[str]) -> str:
-        pass
         # issue ask and r() options, get reply at T+1
+        for opt in options:
+            self.ctl.add("init_states", [], f"r({opt}).")
+        self.ctl.add("nl_commands", [], f'ask("{person}", "{question}", {self.curr_tp + 1}).')
+        self.curr_tp += 1
+        self.solve_to_tp(self.curr_tp)
         
-    def say(self, message : str) -> None:
-        pass
-        # issue say
+    
 
 def main():
     c = Context()
@@ -88,17 +89,17 @@ def main():
     c.ctl.add("init_states", [], 'is_in_room("Arjun", "office", 0).')
     c.ctl.add("")
     # generated LLM code:
-    start_loc = c.get_current_location()
-    print(start_loc)
-    # print(c.is_in_room("robot"))
+    loc1 = c.get_current_location()
+    print(loc1)
+    # tp1 = c.curr_tp
     # c.go_to("Arjun's office")
-    # print(c.get_current_location())
-    print(c.get_room_at(0))
-    # print(c.is_in_room("robot"))
-    # response = ask("Arjun", "Are you ready to go?", ["Yes", "No"])
-    # c.go_to("start_loc")
-    # print(c.get_current_location())
-    # say("Arjun said: " + response)
+    # loc2 = c.get_current_location()
+    # tp2 = c.curr_tp
+    # assert(loc1 == "start_loc"), loc1
+    # assert(loc2 == "Arjun's office"), loc2
+    # assert(tp1 == 0), tp1
+    # assert(tp2 == 1), tp2
+
 
 if __name__=="__main__":
     main()
