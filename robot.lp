@@ -35,19 +35,19 @@
 % goto changes loc of robot at next timestep
 is_in_room("robot", B, T+1) :- go_to(B, T), 
                             is_in_room("robot", C, T), C!=B, 
-                            {T >= X : id(X)}, 
+                            % {T >= X : id(X)}, 
                             T < timeout.
 
 % robot stays in same loc unless goto issued
 is_in_room("robot", R, T+1) :- is_in_room("robot", R, T), 
                                 not go_to(_, T), % goto R is no-op
                                 % 1{T >= X : id},
-                                id, 
+                                % id, 
                                 T < timeout. 
 
 % other agents stay in same loc (no control over other agents for now)
 is_in_room(A, R, T+1) :- is_in_room(A, R, T), 
-                        {T >= X : id(X)}, 
+                        % {T >= X : id(X)}, 
                         T < timeout, 
                         A!="robot".
 
@@ -57,13 +57,12 @@ asked(Agent, Question, Time) :- is_in_room(Agent, Room, Time),
                             ask(Agent, Question, Time), 
                             Agent != "robot".
 
-#external answers.
-1{ response(Answer) : r(Answer)}1 :- answers.
+
+% response(Answer) :- r(Answer).
 
 % if agent asked question, get response
-replied(Agent, Answer, Time+1) :- asked(Agent, Question, Time),
-                                response(Answer),
-                                    answers.
+replied(Agent, Answer, Time) :- asked(Agent, Question, Time),
+                                r(Answer).
 
 
 % #program nl_commands.

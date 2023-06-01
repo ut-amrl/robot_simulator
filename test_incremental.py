@@ -10,8 +10,6 @@ from observer import Observer
 """
     
 def main():
-    ob = Observer()
-    ctl = Control()
     ctl.register_observer(ob)
     
     ctl.load("robot_test.lp")
