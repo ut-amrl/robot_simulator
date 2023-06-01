@@ -8,19 +8,16 @@ class Context:
 
     def __init__(self, robot_cmds_file = "robot.lp", timeout=10):
         self.ctl = Control()
+        self.timeout=timeout
         self.ctl.load(robot_cmds_file)
         # self.parts = [("init_states", []),("rules", []), ("nl_commands", [])]
         self.ctl.add(f"#const timeout = {timeout}.")
-        for i in range(timeout):
-            self.ctl.add(f"#external ext{i}.")
-        
-        self.ctl.add("id(0) :- ext0.")
+        # for i in range(timeout):
+        self.ctl.add(f"#external id.")
+            # self.ctl.add(f"id({i}) :- ext{i}.")
+        self.ctl.assign_external(Function(f"id"), True)
         self.curr_tp = 0
 
-    # def release(self, a:int, b:int):
-    #     for i in range(a, b):
-    #         self.ctl.release_external(f"ext{i}")
-    #     self.ctl.cleanup()
         
     def inc_curr_tp(self):
         self.curr_tp += 1
@@ -30,18 +27,6 @@ class Context:
         self.ctl.ground()
         return self.ctl.solve()
 
- 
-    # def solve_to_tp(self, tp: int) -> None:
-    #     # ground to tp
-    #     self.ctl.add(f"id({tp}) :- ext{tp}.")
-    #     self.ctl.ground(self.parts)
-    #     func = clingo.Function("id", [Number(tp)])
-    #     assert(self.ctl.symbolic_atoms[func] is not None), tp
- 
-    #     # func = clingo.Function("id", [Number(0)])
-    #     # print(func)
-    #     assert(self.ctl.symbolic_atoms[func] is not None)
-    #     self.ctl.solve()
         
     def debug_model(self):
         model = []
@@ -57,7 +42,7 @@ class Context:
         return self.get_room_at(time_step)
 
     def get_room_at(self, time : int, agent : str = "robot") -> str:
-        self.ground_and_solve()
+       
         room = [sig.symbol.arguments[1] for sig 
                 in self.ctl.symbolic_atoms.by_signature("is_in_room", 3)
                 if sig.symbol.arguments[2] == Number(time) and
@@ -67,7 +52,7 @@ class Context:
     
     def get_all_rooms(self) -> List[str]:
         # get all "is in room" and "goto" values 
-        self.ground_and_solve()
+        
         is_in_room_stmts = [str(sig.symbol.arguments[1]) for sig 
                             in self.ctl.symbolic_atoms.by_signature("is_in_room", 3)]
         goto_stmts = [str(sig.symbol.arguments[1]) for sig 
@@ -99,40 +84,57 @@ class Context:
     def go_to(self, location : str) -> None:
         # issue goto
         self.ctl.add(f'go_to("{location}", {self.curr_tp}).')
-        self.inc_curr_tp()
-        self.ground_and_solve()
+        self.inc_curr_tp() 
 
     def ask(self, person : str, question : str, options: List[str]) -> str:
         # issue ask and r() options, get reply at T+1
         for opt in options:
             self.ctl.add(f"r({opt}).")
         self.ctl.add(f'ask("{person}", "{question}", {self.curr_tp}).')
-        self.inc_curr_tp()
-        self.ground_and_solve()
         
-    
+"""
+Note:
+- once grounded, you can't change that chunk of code
+- adding to solver just adds dead branch to search (need custom propagator)
+- custom observer is best for getting
+"""    
 
 def main():
-    c = Context()
+    c = Context(timeout=3)
     # NL command:
     c.ctl.add('is_in_room("robot", "start_loc", 0).')
-    # c.ctl.add("init_states", [], 'is_in_room("Arjun", "office", 0).')
+    # c.ctl.add('is_in_room("Arjun", "office", 0).')
     # c.ctl.add("")
     # generated LLM code:
-    loc1 = c.get_current_location()
-    print("loc1:", loc1)
-    c.ctl.cleanup()
-    tp1 = c.curr_tp
-    print("tp1:", tp1)
+    """
+    start_loc = get_current_loc()
+    go_to("Arjun's office")
+    response = ask("Arjun", "ready to head out?", ["yes", "no", "maybe"])
+    go_to(start_loc)
+    say("Arjun said: " + response)
+    """
+  
+    # loc1 = c.get_current_location()
+    # print("loc1:", loc1)
+    # tp1 = c.curr_tp
+    # print("tp1:", tp1)
+    # c.release(0,0)
     # c.ctl.add('id(1).')
-    # c.ctl.ground(c.parts)
-    c.go_to("office")
-    # # c.ctl.ground()
-    tp2 = c.curr_tp
-    print("tp2:", tp2)
-    loc2 = c.get_current_location()
-    print("loc2:",loc2)
+    # c.ctl.ground()
+    # c.go_to("office")
+    # c.release(1)
+    # # c.ctl.cleanup()
+    # tp2 = c.curr_tp
+    # print("tp2:", tp2)
+    # loc2 = c.get_current_location()
+    # print("loc2:",loc2)
+    # c.release(2)
+    # c.ctl.cleanup()
+    # c.ask("Arjun", "ready to head out?", ["yes", "no"])
+    # c.go_to("start_loc")
+    # c.say("Arjun said: ")
     
+    c.ctl.ground()
     with c.ctl.solve(yield_=True) as hnd:
             for i,m in enumerate(hnd):
                 print("Answer: ",i)

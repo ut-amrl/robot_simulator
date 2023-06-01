@@ -1,3 +1,4 @@
+
 % ASP lightweight simulator for evaluating robot command traces
 % INPUT: NL command and generated code
 % eg.
@@ -21,8 +22,13 @@
 % id(0).
 % id(1).
 % #program rules.
+% #const timeout = 4.
+% #external id(0).
+% #external id(1).
 
+% is_in_room("robot", "start_loc", 0).
 
+% id(X) :- ext(X).
 
 % Transition rules
 
@@ -35,7 +41,8 @@ is_in_room("robot", B, T+1) :- go_to(B, T),
 % robot stays in same loc unless goto issued
 is_in_room("robot", R, T+1) :- is_in_room("robot", R, T), 
                                 not go_to(_, T), % goto R is no-op
-                                1{T >= X : id(X)}, 
+                                % 1{T >= X : id},
+                                id, 
                                 T < timeout. 
 
 % other agents stay in same loc (no control over other agents for now)
