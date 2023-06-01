@@ -72,7 +72,7 @@ class Context:
     ## get most curr response
     def say(self, message : str) -> None:
         # get most current reply
-        self.ctl.add(f'say("{message }", {self.curr_tp}).')
+        self.ctl.add(f'say("{message}", {self.curr_tp}).')
         
     def go_to(self, location : str) -> None:
         # issue goto
@@ -120,7 +120,22 @@ def main():
     c.ctl.add(f':- not is_in_room("robot", "start_loc", {c.timeout}).')
     c.ctl.add(f':- not replied("Arjun", _, _).')
     c.ground_and_solve()
-
+    
+    init_state = ['is_in_room("robot", "start_loc", 0).',
+                    'is_in_room("mug", "living_room", 0).']
+    c = Context(timeout=3, init_state=init_state)
+    start_loc = c.get_current_location()
+    c.go_to("living_room")
+    mug_found = c.is_in_room("mug")
+    c.go_to(start_loc)
+    if mug_found:
+        c.say("There is a mug in the living room")
+    else:
+        c.say("There is no mug in the living room")
+        
+    c.ctl.add(':- not say("There is a mug in the living room", _).')
+    c.ctl.add(f':- not is_in_room("robot", "start_loc", {c.timeout}).')
+    c.ground_and_solve()
 
 if __name__=="__main__":
     main()
