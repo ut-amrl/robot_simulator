@@ -13,41 +13,21 @@
 % OUTPUT: whether generated code matches NL command
 % METHOD: run a simulation of the code, check if it meets the NL command specifications
 
-% timeout (for now)
-
-% #program init_states.
-
-% is_in_room("robot", "start_loc", 0).
-% % is_in_room("Arjun", "office", 0).
-% id(0).
-% id(1).
-% #program rules.
-% #const timeout = 4.
-% #external id(0).
-% #external id(1).
-
-% is_in_room("robot", "start_loc", 0).
-
-% id(X) :- ext(X).
 
 % Transition rules
 
 % goto changes loc of robot at next timestep
 is_in_room("robot", B, T+1) :- go_to(B, T), 
                             is_in_room("robot", C, T), 
-                            % {T >= X : id(X)}, 
                             T < timeout.
 
 % robot stays in same loc unless goto issued
 is_in_room("robot", R, T+1) :- is_in_room("robot", R, T), 
                                 not go_to(_, T), % goto R is no-op
-                                % 1{T >= X : id},
-                                % id, 
                                 T < timeout. 
 
 % other agents stay in same loc (no control over other agents for now)
 is_in_room(A, R, T+1) :- is_in_room(A, R, T), 
-                        % {T >= X : id(X)}, 
                         T < timeout, 
                         A!="robot".
 
@@ -58,14 +38,6 @@ asked(Agent, Question, Time) :- is_in_room(Agent, Room, Time),
                             Agent != "robot".
 
 
-% response(Answer) :- r(Answer).
-
 % if agent asked question, get response
 replied(Agent, Answer, Time) :- asked(Agent, Question, Time),
                                 r(Answer).
-
-
-% #program nl_commands.
-% id(0).
-% id(1).
-% is_in_room("robot", "start_loc", 0).

@@ -3,7 +3,6 @@ from clingo.solving import Model
 from clingo.symbol import Function, String, Number
 from typing import List 
 import clingo
-from observer import Observer
 import random 
 
 class Context:
@@ -12,20 +11,14 @@ class Context:
         self.ctl = Control()
         self.timeout=timeout
         self.ctl.load(robot_cmds_file)
-        # self.observer = Observer()
-        # self.ctl.register_observer(self.observer)
-        
-        # self.parts = [("init_states", []),("rules", []), ("nl_commands", [])]
         self.ctl.add(f"#const timeout = {timeout}.")
-        # for i in range(timeout):
-        # self.ctl.add(f"#external id.")
-            # self.ctl.add(f"id({i}) :- ext{i}.")
-        # self.ctl.assign_external(Function(f"id"), True)
+
         self.curr_tp = 0
         self.curr_robot_loc = "start_loc"
         self.all_rooms = []
         self.curr_reply = ""
         self.init_state = init_state
+
         for atom in init_state:
             self.ctl.add(atom)
             if "is_in_room" in atom:
@@ -35,7 +28,7 @@ class Context:
         
     def inc_curr_tp(self):
         self.curr_tp += 1
-        # self.ctl.add(f"id({self.curr_tp}) :- ext{self.curr_tp}.")
+
 
     def ground_and_solve(self):
         self.ctl.ground()
@@ -49,8 +42,8 @@ class Context:
             for i,m in enumerate(hnd):
                 # print(m)
                 model.append(str(m))
-        print(hnd.get())
-        return model
+        # print(hnd.get())
+        return (model, hnd.get())
             
     def get_current_location(self) -> str:
         # get robot location at max time (from is_in_room)
@@ -101,86 +94,7 @@ Note:
 """    
 
 def main():
-    """
-    start_loc = get_current_loc()
-    go_to("Arjun's office")
-    response = ask("Arjun", "ready to head out?", ["yes", "no", "maybe"])
-    go_to(start_loc)
-    say("Arjun said: " + response)
-    """
-  
-    init_state = ['is_in_room("robot", "start_loc", 0).',
-                    'is_in_room("Arjun", "office", 0).']
-    c = Context(timeout=3, init_state=init_state)
-    
-    start_loc = c.get_current_location()
-    c.go_to("office")
-    assert(c.is_in_room("Arjun"))
-    response = c.ask("Arjun", "ready to head out?", ["yes", "no"])
-    c.go_to(start_loc)
-    c.say("Arjun said: " + response)
-    
-
-    c.ctl.add(f':- not is_in_room("robot", "start_loc", {c.timeout}).')
-    c.ctl.add(f':- not replied("Arjun", _, _).')
-    c.ground_and_solve()
-    
-    init_state = ['is_in_room("robot", "start_loc", 0).',
-                    'is_in_room("mug", "living_room", 0).']
-    c = Context(timeout=3, init_state=init_state)
-    start_loc = c.get_current_location()
-    c.go_to("living_room")
-    mug_found = c.is_in_room("mug")
-    c.go_to(start_loc)
-    if mug_found:
-        c.say("There is a mug in the living room")
-    else:
-        c.say("There is no mug in the living room")
-        
-    c.ctl.add(':- not say("There is a mug in the living room", _).')
-    c.ctl.add(f':- not is_in_room("robot", "start_loc", {c.timeout}).')
-    c.ground_and_solve()
-    
-    init_state = ['is_in_room("robot", "start_loc", 0).',
-                    'is_in_room("stapler", "laundry", 0).',]
-    c = Context(timeout=3, init_state=init_state)
-    list_of_rooms = c.get_all_rooms()
-    start_loc = c.get_current_location()
-    stapler_found = False
-    stapler_loc = None
-    for room in list_of_rooms:
-        if "printer" not in room:
-            continue
-        c.go_to(room)
-        if c.is_in_room("stapler"):
-            stapler_found = True
-            stapler_loc = room
-            break
-    c.go_to(start_loc)
-    if stapler_found:
-        c.say("There is a stapler in the " + stapler_loc)
-    else:
-        c.say("There is no stapler in the house")
-        
-    c.ctl.add(':- not say("There is no stapler in the house", _).')
-    c.ctl.add(f':- not is_in_room("robot", "start_loc", {c.timeout}).')
-    c.ground_and_solve()
-    
-    init_state = ['is_in_room("robot", "start_loc", 0).']
-    c = Context(timeout=3, init_state=init_state)
-    c.all_rooms.append("kitchen")
-    
-    list_of_rooms = c.get_all_rooms()
-    start_loc = c.get_current_location()
-    if c.is_in_room("kitchen"):
-        c.go_to("kitchen")
-        c.say("Yash, make food!")
-    else:
-        c.say("Yash, no food")
-    c.go_to(start_loc)
-        
-    c.ctl.add(':- not say("Yash, make food!").')
-    c.ground_and_solve()
+   c = Context()
     
     
 if __name__=="__main__":
