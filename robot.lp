@@ -34,7 +34,7 @@
 
 % goto changes loc of robot at next timestep
 is_in_room("robot", B, T+1) :- go_to(B, T), 
-                            is_in_room("robot", C, T), C!=B, 
+                            is_in_room("robot", C, T), 
                             % {T >= X : id(X)}, 
                             T < timeout.
 

@@ -23,11 +23,15 @@ class Context:
         # self.ctl.assign_external(Function(f"id"), True)
         self.curr_tp = 0
         self.curr_robot_loc = "start_loc"
-        self.all_rooms = ["start_loc"]
+        self.all_rooms = []
         self.curr_reply = ""
         self.init_state = init_state
         for atom in init_state:
             self.ctl.add(atom)
+            if "is_in_room" in atom:
+                room = atom.split('"')[3]
+                if room != "start_loc":
+                    self.all_rooms.append(room)
         
     def inc_curr_tp(self):
         self.curr_tp += 1
@@ -136,7 +140,49 @@ def main():
     c.ctl.add(':- not say("There is a mug in the living room", _).')
     c.ctl.add(f':- not is_in_room("robot", "start_loc", {c.timeout}).')
     c.ground_and_solve()
-
+    
+    init_state = ['is_in_room("robot", "start_loc", 0).',
+                    'is_in_room("stapler", "laundry", 0).',]
+    c = Context(timeout=3, init_state=init_state)
+    list_of_rooms = c.get_all_rooms()
+    start_loc = c.get_current_location()
+    stapler_found = False
+    stapler_loc = None
+    for room in list_of_rooms:
+        if "printer" not in room:
+            continue
+        c.go_to(room)
+        if c.is_in_room("stapler"):
+            stapler_found = True
+            stapler_loc = room
+            break
+    c.go_to(start_loc)
+    if stapler_found:
+        c.say("There is a stapler in the " + stapler_loc)
+    else:
+        c.say("There is no stapler in the house")
+        
+    c.ctl.add(':- not say("There is no stapler in the house", _).')
+    c.ctl.add(f':- not is_in_room("robot", "start_loc", {c.timeout}).')
+    c.ground_and_solve()
+    
+    init_state = ['is_in_room("robot", "start_loc", 0).']
+    c = Context(timeout=3, init_state=init_state)
+    c.all_rooms.append("kitchen")
+    
+    list_of_rooms = c.get_all_rooms()
+    start_loc = c.get_current_location()
+    if c.is_in_room("kitchen"):
+        c.go_to("kitchen")
+        c.say("Yash, make food!")
+    else:
+        c.say("Yash, no food")
+    c.go_to(start_loc)
+        
+    c.ctl.add(':- not say("Yash, make food!").')
+    c.ground_and_solve()
+    
+    
 if __name__=="__main__":
     main()
     
