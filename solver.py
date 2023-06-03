@@ -91,7 +91,8 @@ Note:
 - once grounded, you can't change that chunk of code
 - adding to solver just adds dead branch to search (need custom propagator)
 - custom observer is best for getting
-"""    
+
+"""     
 
 def main():
    c = Context()
