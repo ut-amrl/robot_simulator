@@ -16,8 +16,17 @@
 
 % Transition rules
 
+
+% goto person = goto room where person is in
+is_in_room("robot", B, T+1) :- is_in_room(Person, B, T), 
+        not is_in_room(_, Person, 0), % person not a room
+        is_in_room("robot", C, T), 
+        go_to(Person, T), 
+        T < timeout.
+
 % goto changes loc of robot at next timestep
 is_in_room("robot", B, T+1) :- go_to(B, T), 
+                            not is_in_room(B, _, _), % is a room not person
                             is_in_room("robot", C, T), 
                             T < timeout.
 
@@ -41,3 +50,5 @@ asked(Agent, Question, Time) :- is_in_room(Agent, Room, Time),
 % if agent asked question, get response
 replied(Agent, Answer, Time) :- asked(Agent, Question, Time),
                                 r(Answer).
+
+
