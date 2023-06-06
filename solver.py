@@ -38,7 +38,6 @@ class Context:
         
     def debug_model(self):
         model = []
-        SAT = False
         with self.ctl.solve(yield_=True) as hnd:
             for i,m in enumerate(hnd):
                 # print(m)
