@@ -38,12 +38,14 @@ class Context:
         
     def debug_model(self):
         model = []
+        SAT = False
         with self.ctl.solve(yield_=True) as hnd:
             for i,m in enumerate(hnd):
                 # print(m)
-                model.append(str(m))
-        # print(hnd.get())
-        return (model, hnd.get())
+                continue
+                model.append(m.symbols)
+                
+            return (model, hnd.get())
             
     def get_current_location(self) -> str:
         # get robot location at max time (from is_in_room)
